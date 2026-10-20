@@ -139,74 +139,116 @@
   });
 
   async function simpanFile(blob, namaFile) {
-    // LANGKAH 0 — siapkan File object sekali
-    let f;
-    try { f = new File([blob], namaFile, { type: 'video/mp4' }); }
-    catch (e) { f = null; }
+    log('Menyiapkan file ' + namaFile + ' (' +
+        (blob.size / 1048576).toFixed(2) + ' MB)…');
 
-    // LANGKAH 1 — Web Share
-    let bisaShare = false;
-    try {
-      bisaShare = !!(f &&
-        typeof navigator.share === 'function' &&
-        typeof navigator.canShare === 'function' &&
-        navigator.canShare({ files: [f] }));
-    } catch (e) { bisaShare = false; }
-    if (bisaShare) {
-      try {
-        log('Membuka dialog simpan…');
-        await navigator.share({ files: [f], title: namaFile });
-        log('Berhasil dibagikan/disimpan.');
-        return true;
-      } catch (e) {
-        if (e && e.name === 'AbortError') { log('Dibatalkan oleh pengguna.'); return false; }
-        log('Share gagal: ' + (e && e.message) + ' — coba cara lain…');
-      }
-    }
-
-    // LANGKAH 2 — File System Access (desktop Chrome/Edge)
-    if (typeof window.showSaveFilePicker === 'function') {
-      try {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: namaFile,
-          types: [{ description: 'Video MP4', accept: { 'video/mp4': ['.mp4'] } }]
-        });
-        const w = await handle.createWritable();
-        await w.write(blob); await w.close();
-        log('Tersimpan via File System Access.');
-        return true;
-      } catch (e) {
-        if (e && e.name === 'AbortError') { log('Dibatalkan.'); return false; }
-        log('File System Access gagal: ' + (e && e.message) + ' — fallback…');
-      }
-    }
-
-    // LANGKAH 3 — Anchor download klasik
+    // === LANGKAH 1: Download langsung via anchor (PRIORITAS UTAMA) ===
+    // Di Chrome Android modern, ini langsung menyimpan ke folder Downloads.
     try {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = namaFile;
-      document.body.appendChild(a); a.click(); a.remove();
-      log('Perintah unduh dikirim ke browser.');
-      setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
-      return true;
+      a.href = url;
+      a.download = namaFile;
+      a.rel = 'noopener';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      log('Perintah unduh dikirim. Cek folder "Downloads" di perangkat Anda.');
+      log('Jika file tidak muncul dalam 5 detik, gunakan tombol manual di bawah.');
+
+      // Jangan revoke terlalu cepat — beri waktu browser menyelesaikan unduhan
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+      // Tampilkan tombol manual sebagai jaring pengaman
+      tampilkanTombolManual(blob, namaFile);
+      return;
     } catch (e) {
-      log('Anchor download gagal: ' + (e && e.message) + ' — fallback terakhir…');
+      log('Unduh langsung gagal: ' + e.message + ' — mencoba cara lain…');
     }
 
-    // LANGKAH 4 — Tombol manual
+    // === LANGKAH 2: Buka di tab baru (long-press → Simpan video) ===
     try {
-      sembunyikanManual();
-      manualUrl = URL.createObjectURL(blob);
-      manualDownload.href = manualUrl;
-      manualDownload.setAttribute('download', namaFile);
-      openTab.href = manualUrl;
-      manualLinks.style.display = 'flex';
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank');
+      if (w) {
+        log('Video dibuka di tab baru. Tekan lama pada video, lalu pilih');
+        log('"Download video" / "Simpan video" untuk menyimpan ke perangkat.');
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        return;
+      }
     } catch (e) {
-      log('Tidak dapat membuat tautan manual: ' + (e && e.message));
+      log('Buka tab baru gagal: ' + e.message);
     }
-    log('Unduh otomatis tidak tersedia. Gunakan tombol manual di bawah.');
-    return false;
+
+    // === LANGKAH 3: Share sheet (fallback terakhir) ===
+    let f = null;
+    try { f = new File([blob], namaFile, { type: 'video/mp4' }); } catch {}
+    if (f && typeof navigator.share === 'function'
+          && typeof navigator.canShare === 'function'
+          && navigator.canShare({ files: [f] })) {
+      try {
+        log('Membuka share sheet. Pilih "Drive" lalu "Simpan offline",');
+        log('atau app Files jika tersedia.');
+        await navigator.share({ files: [f], title: namaFile });
+        log('Selesai dibagikan.');
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') { log('Dibatalkan.'); return; }
+        log('Share gagal: ' + e.message);
+      }
+    }
+
+    log('Semua cara otomatis gagal. Gunakan tombol manual di bawah.');
+    tampilkanTombolManual(blob, namaFile);
+  }
+
+  function tampilkanTombolManual(blob, namaFile) {
+    // Hapus tombol manual lama jika ada
+    const lama = document.getElementById('manualWrap');
+    if (lama) lama.remove();
+
+    const url = URL.createObjectURL(blob);
+    const wrap = document.createElement('div');
+    wrap.id = 'manualWrap';
+    wrap.style.cssText = 'margin-top:16px;padding:12px;background:#fff3cd;' +
+      'border:1px solid #ffe08a;border-radius:8px;';
+
+    const p = document.createElement('p');
+    p.style.cssText = 'margin:0 0 8px;font-size:14px;';
+    p.textContent = 'Jika file belum tersimpan, gunakan tombol di bawah:';
+
+    const a1 = document.createElement('a');
+    a1.href = url;
+    a1.download = namaFile;
+    a1.textContent = '⬇️ Unduh ' + namaFile;
+    a1.style.cssText = 'display:block;min-height:44px;line-height:44px;' +
+      'text-align:center;background:#0d6efd;color:#fff;border-radius:8px;' +
+      'text-decoration:none;font-weight:bold;margin-bottom:8px;';
+
+    const a2 = document.createElement('a');
+    a2.href = url;
+    a2.target = '_blank';
+    a2.rel = 'noopener';
+    a2.textContent = '🔗 Buka di tab baru (tekan lama → Simpan video)';
+    a2.style.cssText = 'display:block;min-height:44px;line-height:44px;' +
+      'text-align:center;background:#6c757d;color:#fff;border-radius:8px;' +
+      'text-decoration:none;font-size:13px;';
+
+    wrap.appendChild(p);
+    wrap.appendChild(a1);
+    wrap.appendChild(a2);
+
+    const logEl = document.getElementById('log');
+    if (logEl && logEl.parentNode) {
+      logEl.parentNode.insertBefore(wrap, logEl.nextSibling);
+    } else {
+      document.body.appendChild(wrap);
+    }
+
+    // Revoke jauh lebih lambat agar link manual tetap hidup untuk di-tap
+    setTimeout(() => URL.revokeObjectURL(url), 10 * 60 * 1000);
   }
 
   window.simpanFile = simpanFile;
