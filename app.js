@@ -7,6 +7,8 @@
   const fileSizeEl = document.getElementById('fileSize');
   const prosesBtn = document.getElementById('prosesBtn');
   const simpanBtn = document.getElementById('simpanBtn');
+  const hasilWrap = document.getElementById('hasilWrap');
+  const hasilInfo = document.getElementById('hasilInfo');
   const manualLinks = document.getElementById('manualLinks');
   const manualDownload = document.getElementById('manualDownload');
   const openTab = document.getElementById('openTab');
@@ -54,7 +56,9 @@
     if (!file) return;
     fileDipilih = file;
     blobHasil = null;
-    simpanBtn.style.display = 'none';
+    window.__hasilBlob = null;
+    window.__hasilNama = null;
+    if (hasilWrap) hasilWrap.style.display = 'none';
     sembunyikanManual();
     fileNameEl.textContent = file.name;
     fileSizeEl.textContent = 'Ukuran asli: ' + mb(file.size);
@@ -85,7 +89,7 @@
   prosesBtn.addEventListener('click', async function () {
     if (!fileDipilih) return;
     prosesBtn.disabled = true;
-    simpanBtn.style.display = 'none';
+    if (hasilWrap) hasilWrap.style.display = 'none';
     sembunyikanManual();
     try {
       log('Membaca file…');
@@ -101,7 +105,18 @@
       }
       blobHasil = out instanceof Blob ? out : new Blob([out], { type: 'video/mp4' });
       log('Selesai. Ukuran hasil: ' + mb(blobHasil.size));
-      simpanBtn.style.display = '';
+      const namaHasil = namaDasar(fileDipilih.name) + '-patched.mp4';
+
+      // simpan untuk dipakai tombol
+      window.__hasilBlob = blobHasil;
+      window.__hasilNama = namaHasil;
+
+      if (hasilWrap && hasilInfo) {
+        hasilInfo.textContent = namaHasil + ' (' + mb(blobHasil.size) + ')';
+        hasilWrap.style.display = 'block';
+      } else {
+        log('ERROR: elemen #hasilWrap tidak ditemukan di HTML');
+      }
     } catch (e) {
       log('Proses gagal: ' + (e && e.message ? e.message : e));
     } finally {
@@ -109,11 +124,15 @@
     }
   });
 
-  simpanBtn.addEventListener('click', async function () {
-    if (!blobHasil || !fileDipilih) return;
+  // Listener dipasang sekali saat script dimuat (script ada di akhir <body>, DOM sudah siap).
+  if (simpanBtn) simpanBtn.addEventListener('click', async function () {
+    if (!window.__hasilBlob) {
+      log('Belum ada hasil. Proses video dulu.');
+      return;
+    }
     simpanBtn.disabled = true;
     try {
-      await simpanFile(blobHasil, namaDasar(fileDipilih.name) + '-patched.mp4');
+      await simpanFile(window.__hasilBlob, window.__hasilNama);
     } finally {
       simpanBtn.disabled = false;
     }

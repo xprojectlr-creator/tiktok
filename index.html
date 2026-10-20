@@ -24,15 +24,25 @@
   <div class="row">
     <button id="prosesBtn" style="display:none; min-height:48px; flex:1; font-size:1.05rem;">Proses Sekarang</button>
   </div>
-  <div class="row">
-    <button id="simpanBtn" style="display:none; min-height:48px; flex:1; font-size:1.05rem;">Simpan / Bagikan Video</button>
-  </div>
   <div id="manualLinks" class="row" style="display:none; flex-wrap:wrap;">
     <a id="manualDownload" class="dl" download="video.mp4" style="min-height:44px; display:inline-flex; align-items:center;">Klik di sini untuk unduh</a>
     <a id="openTab" class="dl" target="_blank" rel="noopener" style="min-height:44px; display:inline-flex; align-items:center;">Buka di tab baru</a>
   </div>
   <textarea id="log" readonly rows="12"></textarea>
   <div id="result"></div>
+  <div id="hasilWrap" style="display:none; margin-top:16px;">
+    <p><strong>Hasil siap:</strong> <span id="hasilInfo"></span></p>
+    <button id="simpanBtn"
+            style="min-height:48px; padding:12px 20px; font-size:16px;
+                   background:#fe2c55; color:#fff; border:0; border-radius:8px;
+                   cursor:pointer; width:100%;">
+      Simpan / Bagikan Video
+    </button>
+    <p style="font-size:13px;color:#666;margin-top:8px;">
+      Di Android, tombol ini membuka menu Share — pilih "Files" atau
+      "Simpan ke Perangkat" untuk menyimpan video.
+    </p>
+  </div>
 </main>
 <script src="mp4-patch.js"></script>
 <script src="app.js"></script>
