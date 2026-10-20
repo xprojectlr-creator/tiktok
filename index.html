@@ -9,13 +9,27 @@
 <body>
 <main>
   <h1>TikTok Preserver</h1>
-  <div id="drop">Seret file MP4/MOV ke sini atau klik untuk memilih
-    <input type="file" id="file" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>
+  <div id="drop" style="padding:8px;">
+    <label for="fileInput" id="pickLabel"
+           style="display:flex; align-items:center; justify-content:center;
+                  min-height:120px; cursor:pointer; border:2px dashed #888;
+                  border-radius:8px; padding:16px; text-align:center;">
+      Tap untuk pilih video, atau drag ke sini
+    </label>
+    <input id="fileInput" type="file" accept="video/*"
+           style="display:none">
+    <p id="fileName">Belum ada file.</p>
+    <p id="fileSize"></p>
   </div>
-  <p id="chosen">Belum ada file.</p>
   <div class="row">
-    <button id="process" disabled>Proses (Inflate)</button>
-    <button id="cancel" disabled>Batal</button>
+    <button id="prosesBtn" style="display:none; min-height:48px; flex:1; font-size:1.05rem;">Proses Sekarang</button>
+  </div>
+  <div class="row">
+    <button id="simpanBtn" style="display:none; min-height:48px; flex:1; font-size:1.05rem;">Simpan / Bagikan Video</button>
+  </div>
+  <div id="manualLinks" class="row" style="display:none; flex-wrap:wrap;">
+    <a id="manualDownload" class="dl" download="video.mp4" style="min-height:44px; display:inline-flex; align-items:center;">Klik di sini untuk unduh</a>
+    <a id="openTab" class="dl" target="_blank" rel="noopener" style="min-height:44px; display:inline-flex; align-items:center;">Buka di tab baru</a>
   </div>
   <textarea id="log" readonly rows="12"></textarea>
   <div id="result"></div>
