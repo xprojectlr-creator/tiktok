@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TikTok Preserver</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1>TikTok Preserver</h1>
+  <div id="drop">Seret file MP4/MOV ke sini atau klik untuk memilih
+    <input type="file" id="file" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>
+  </div>
+  <p id="chosen">Belum ada file.</p>
+  <div class="row">
+    <button id="process" disabled>Proses (Inflate)</button>
+    <button id="cancel" disabled>Batal</button>
+  </div>
+  <textarea id="log" readonly rows="12"></textarea>
+  <div id="result"></div>
+</main>
+<script src="mp4-patch.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
